@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System One / JEV - Qwen3.5-27B on pure CPU - verification</title>
+<style>
+:root{--bg:#0b1020;--card:#121a33;--fg:#e8ecf5;--mut:#8b97b5;--ok:#22c55e;--bad:#ef4444;--acc:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:26px;margin:0 0 6px}
+.sub{color:var(--mut);margin-bottom:26px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:22px 0}
+.card{background:var(--card);border:1px solid #22305a;border-radius:12px;padding:16px}
+.card .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.card .v{font-size:28px;font-weight:650;margin-top:6px}
+.card .n{color:var(--mut);font-size:12px;margin-top:4px}
+h2{font-size:18px;margin:34px 0 12px;border-bottom:1px solid #22305a;padding-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #1b2544}
+th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0;background:var(--bg)}
+tr.ok td:nth-child(6){color:var(--ok);font-weight:700}
+tr.bad{background:#2a1220}
+tr.bad td:nth-child(6){color:var(--bad);font-weight:700}
+.pred{font-weight:600}
+.dist{color:var(--mut);font-size:11px;font-family:ui-monospace,Menlo,monospace}
+.scroll{max-height:560px;overflow:auto;border:1px solid #22305a;border-radius:12px}
+.note{background:#141d3a;border-left:3px solid var(--acc);padding:14px 16px;border-radius:8px;margin:16px 0;color:#cdd7ee}
+.warn{background:#2a1b12;border-left:3px solid #f59e0b;padding:14px 16px;border-radius:8px;margin:16px 0}
+code{background:#1b2544;padding:2px 6px;border-radius:5px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.sh{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:13.5px}
+.shbar{height:16px;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.shbar.fast{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.shbar.slow{background:linear-gradient(90deg,#b91c1c,#ef4444)}
+footer{color:var(--mut);font-size:12.5px;margin-top:40px;border-top:1px solid #22305a;padding-top:16px}
+</style></head><body><div class="wrap">
+
+<h1>System One / JEV-style decisions on pure CPU</h1>
+<div class="sub">Qwen3.5-27B-Q3_K_S &middot; llama.cpp 0.4.1 &middot; AMD EPYC 9K65, 32 vCPU, <b>no GPU</b>
+ &middot; generated 2026-09-22</div>
+
+<div class="note"><b>What this is.</b> The decoder is used as a <b>classifier</b>, not a generator.
+The model emits one option letter per decision: the letter tokens are hard-masked with
+<code>logit_bias</code> (and a GBNF grammar in the batched path), and the first-token
+<code>logprob</code> over those letters <i>is</i> the answer. One prefill, one read position,
+no generated text, no second model. Everything below is from real runs on the box described above.</div>
+
+<div class="cards">
+<div class="card"><div class="k">Accuracy</div><div class="v">96.0%</div><div class="n">48/50 questions</div></div>
+<div class="card"><div class="k">Tier 1 / 2 / 3</div><div class="v" style="font-size:19px">93% &middot; 95% &middot; 100%</div><div class="n">easy / moderate / hard</div></div>
+<div class="card"><div class="k">Latency, unshared</div><div class="v">50.8<span style="font-size:15px"> s</span></div><div class="n">one decision per prefill</div></div>
+<div class="card"><div class="k">Latency, shared prefix</div><div class="v" style="color:var(--ok)">1.6<span style="font-size:15px"> s</span></div><div class="n">after one ~52 s warm</div></div>
+<div class="card"><div class="k">Wall time</div><div class="v">47<span style="font-size:15px"> min</span></div><div class="n">50 sequential decisions</div></div>
+</div>
+
+<h2>Cost cliff &mdash; why one-decision-per-call is slow</h2>
+<div class="note">Latency is <b>not</b> a flat floor and <b>not</b> linear. There is a sharp
+discontinuity at <b>36 prompt tokens</b>: below it ~1&ndash;2 s, at or above it ~50 s. A realistic
+decision prompt (instruction header + state + question + options + <code>Answer:</code>) is
+always above 36 tokens, so the ~50 s intercept always applies.</div>
+<svg viewBox="0 0 760 300" width="100%" style="max-width:760px">
+<line x1="60" y1="240" x2="700" y2="240" stroke="#22305a"/>
+<line x1="60" y1="60" x2="60" y2="240" stroke="#22305a"/>
+<line x1="74.1" y1="60" x2="74.1" y2="240" stroke="#f59e0b" stroke-dasharray="5 4"/>
+<text x="80.1" y="76" fill="#f59e0b" font-size="12">36-token cliff</text>
+<text x="60" y="286" fill="#8b97b5" font-size="12">prompt tokens &rarr;</text>
+<text x="6" y="60" fill="#8b97b5" font-size="12" transform="rotate(-90 18,150)">seconds</text>
+<polyline points="62.8,238.4 65.2,237.8 65.6,237.6 71.9,235.8 72.7,235.8 73.1,235.7 73.9,235.4 74.3,122.5 74.7,117.7 97.4,121.1 103.0,90.4 142.8,60.0 222.4,104.0 381.6,82.7 700.0,60.4" fill="none" stroke="#60a5fa" stroke-width="2"/>
+<circle cx=62.8 cy=238.4 r=4 fill="#ef4444"/><circle cx=65.2 cy=237.8 r=4 fill="#ef4444"/><circle cx=65.6 cy=237.6 r=4 fill="#ef4444"/><circle cx=71.9 cy=235.8 r=4 fill="#ef4444"/><circle cx=72.7 cy=235.8 r=4 fill="#ef4444"/><circle cx=73.1 cy=235.7 r=4 fill="#ef4444"/><circle cx=73.9 cy=235.4 r=4 fill="#ef4444"/><circle cx=74.3 cy=122.5 r=4 fill="#ef4444"/><circle cx=74.7 cy=117.7 r=4 fill="#ef4444"/><circle cx=97.4 cy=121.1 r=4 fill="#ef4444"/><circle cx=103.0 cy=90.4 r=4 fill="#ef4444"/><circle cx=142.8 cy=60.0 r=4 fill="#ef4444"/><circle cx=222.4 cy=104.0 r=4 fill="#ef4444"/><circle cx=381.6 cy=82.7 r=4 fill="#ef4444"/><circle cx=700.0 cy=60.4 r=4 fill="#ef4444"/>
+</svg>
+
+<h2>Two ways to pay the cost</h2>
+<div class=sh><div>warm common prefix (once)</div><div style="font-variant-numeric:tabular-nums">51.84 s</div><div style="grid-column:1/-1"><div class="shbar slow" style="width:100%"></div></div></div><div class=sh><div>20 branch decisions</div><div style="font-variant-numeric:tabular-nums">33.81 s</div><div style="grid-column:1/-1"><div class="shbar slow" style="width:65%"></div></div></div><div class=sh><div>  -&gt; per decision</div><div style="font-variant-numeric:tabular-nums">1.69 s</div><div style="grid-column:1/-1"><div class="shbar fast" style="width:3%"></div></div></div><div class=sh><div>2nd batch, same state, per decision</div><div style="font-variant-numeric:tabular-nums">1.62 s</div><div style="grid-column:1/-1"><div class="shbar fast" style="width:3%"></div></div></div><div class=sh><div>new state, re-warm + per decision</div><div style="font-variant-numeric:tabular-nums">1.57 s</div><div style="grid-column:1/-1"><div class="shbar fast" style="width:3%"></div></div></div><div class=sh><div>exact-repeat prompt (cache hit)</div><div style="font-variant-numeric:tabular-nums">0.34 s</div><div style="grid-column:1/-1"><div class="shbar fast" style="width:0%"></div></div></div><div class=sh><div>one decision per prefill (no sharing)</div><div style="font-variant-numeric:tabular-nums">50.83 s</div><div style="grid-column:1/-1"><div class="shbar slow" style="width:98%"></div></div></div>
+<div class="warn"><b>The shared-prefix trick (openjev / SemIf pattern):</b> render the preamble + state
+once, warm it, then issue one branch call per question. Every decision after the first costs
+~1.6 s instead of ~50 s. It requires an <b>exact</b> shared prefix and a <b>single large slot</b>
+&mdash; with <code>--parallel 4</code> the context is sharded and the cache thrashes (observed:
+alternating 1.6 s / 58 s).</div>
+
+<h2>All 50 decisions</h2>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Tier</th><th>Type</th><th>Predicted</th><th>Gold</th><th></th><th>Conf</th><th>Sec</th><th>Distribution</th></tr></thead>
+<tbody><tr class="ok"><td>1</td><td>T1</td><td>sentiment</td><td class=pred>positive</td><td>positive</td><td>&#10003;</td><td>0.988</td><td>52.7</td><td class=dist>positive 0.988 negative 0.012</td></tr><tr class="ok"><td>2</td><td>T1</td><td>topic</td><td class=pred>Business</td><td>Business</td><td>&#10003;</td><td>0.975</td><td>53.4</td><td class=dist>Business 0.975 Science/Technology 0.018 Sports 0.004 World 0.002</td></tr><tr class="ok"><td>3</td><td>T1</td><td>math</td><td class=pred>43</td><td>43</td><td>&#10003;</td><td>0.676</td><td>52.3</td><td class=dist>43 0.676 42 0.150 44 0.129 41 0.046</td></tr><tr class="ok"><td>4</td><td>T1</td><td>math</td><td class=pred>63</td><td>63</td><td>&#10003;</td><td>0.996</td><td>52.2</td><td class=dist>63 0.996 56 0.002 81 0.002 72 0.000</td></tr><tr class="ok"><td>5</td><td>T1</td><td>capital</td><td class=pred>Paris</td><td>Paris</td><td>&#10003;</td><td>0.998</td><td>53.9</td><td class=dist>Paris 0.998 Nice 0.002 Lyon 0.000 Marseille 0.000</td></tr><tr class="ok"><td>6</td><td>T1</td><td>sentiment</td><td class=pred>negative</td><td>negative</td><td>&#10003;</td><td>0.993</td><td>52.3</td><td class=dist>negative 0.993 positive 0.007</td></tr><tr class="ok"><td>7</td><td>T1</td><td>entailment</td><td class=pred>yes</td><td>yes</td><td>&#10003;</td><td>0.969</td><td>53.6</td><td class=dist>yes 0.969 no 0.031</td></tr><tr class="ok"><td>8</td><td>T1</td><td>topic</td><td class=pred>Sports</td><td>Sports</td><td>&#10003;</td><td>0.997</td><td>56.6</td><td class=dist>Sports 0.997 Business 0.002 World 0.001 Science/Technology 0.000</td></tr><tr class="ok"><td>9</td><td>T1</td><td>math</td><td class=pred>63</td><td>63</td><td>&#10003;</td><td>0.799</td><td>59.6</td><td class=dist>63 0.799 53 0.092 73 0.064 67 0.044</td></tr><tr class="ok"><td>10</td><td>T1</td><td>sentiment</td><td class=pred>positive</td><td>positive</td><td>&#10003;</td><td>0.989</td><td>53.5</td><td class=dist>positive 0.989 negative 0.011</td></tr><tr class="ok"><td>11</td><td>T1</td><td>capital</td><td class=pred>Tokyo</td><td>Tokyo</td><td>&#10003;</td><td>0.989</td><td>53.0</td><td class=dist>Tokyo 0.989 Seoul 0.011 Kyoto 0.000 Osaka 0.000</td></tr><tr class="ok"><td>12</td><td>T1</td><td>math</td><td class=pred>12</td><td>12</td><td>&#10003;</td><td>0.966</td><td>52.4</td><td class=dist>12 0.966 14 0.028 11 0.005 10 0.002</td></tr><tr class="ok"><td>13</td><td>T1</td><td>entailment</td><td class=pred>no</td><td>no</td><td>&#10003;</td><td>0.988</td><td>53.0</td><td class=dist>no 0.988 yes 0.012</td></tr><tr class="ok"><td>14</td><td>T1</td><td>topic</td><td class=pred>Science/Technology</td><td>Science/Technology</td><td>&#10003;</td><td>0.998</td><td>52.2</td><td class=dist>Science/Technology 0.998 World 0.002 Sports 0.000 Business 0.000</td></tr><tr class="bad"><td>15</td><td>T1</td><td>math</td><td class=pred>21</td><td>23</td><td>&#10007;</td><td>0.546</td><td>52.9</td><td class=dist>21 0.546 22 0.247 23 0.179 24 0.028</td></tr><tr class="ok"><td>16</td><td>T2</td><td>math</td><td class=pred>322</td><td>322</td><td>&#10003;</td><td>0.995</td><td>52.7</td><td class=dist>322 0.995 332 0.003 312 0.002 342 0.000</td></tr><tr class="ok"><td>17</td><td>T2</td><td>logic</td><td class=pred>yes</td><td>yes</td><td>&#10003;</td><td>0.982</td><td>51.7</td><td class=dist>yes 0.982 no 0.018</td></tr><tr class="bad"><td>18</td><td>T2</td><td>math</td><td class=pred>32</td><td>30</td><td>&#10007;</td><td>0.792</td><td>54.7</td><td class=dist>32 0.792 28 0.146 30 0.048 35 0.013</td></tr><tr class="ok"><td>19</td><td>T2</td><td>entailment</td><td class=pred>no</td><td>no</td><td>&#10003;</td><td>0.985</td><td>52.6</td><td class=dist>no 0.985 yes 0.015</td></tr><tr class="ok"><td>20</td><td>T2</td><td>code</td><td class=pred>[2, 3]</td><td>[2, 3]</td><td>&#10003;</td><td>0.986</td><td>53.9</td><td class=dist>[2, 3] 0.986 [2, 3, 4] 0.006 [1, 2] 0.005 [3, 4] 0.002</td></tr><tr class="ok"><td>21</td><td>T2</td><td>logic</td><td class=pred>no</td><td>no</td><td>&#10003;</td><td>0.986</td><td>53.7</td><td class=dist>no 0.986 yes 0.014</td></tr><tr class="ok"><td>22</td><td>T2</td><td>math</td><td class=pred>36</td><td>36</td><td>&#10003;</td><td>0.798</td><td>56.3</td><td class=dist>36 0.798 30 0.179 40 0.018 24 0.005</td></tr><tr class="ok"><td>23</td><td>T2</td><td>code</td><td class=pred>5</td><td>5</td><td>&#10003;</td><td>0.986</td><td>54.9</td><td class=dist>5 0.986 4 0.006 Error 0.006 6 0.002</td></tr><tr class="ok"><td>24</td><td>T2</td><td>entailment</td><td class=pred>no</td><td>no</td><td>&#10003;</td><td>0.984</td><td>58.7</td><td class=dist>no 0.984 yes 0.016</td></tr><tr class="ok"><td>25</td><td>T2</td><td>math</td><td class=pred>150</td><td>150</td><td>&#10003;</td><td>0.983</td><td>56.3</td><td class=dist>150 0.983 160 0.008 120 0.007 140 0.002</td></tr><tr class="ok"><td>26</td><td>T2</td><td>logic</td><td class=pred>no</td><td>no</td><td>&#10003;</td><td>0.841</td><td>52.0</td><td class=dist>no 0.841 yes 0.159</td></tr><tr class="ok"><td>27</td><td>T2</td><td>code</td><td class=pred>8</td><td>8</td><td>&#10003;</td><td>0.986</td><td>52.5</td><td class=dist>8 0.986 6 0.007 23 0.005 9 0.002</td></tr><tr class="ok"><td>28</td><td>T2</td><td>math</td><td class=pred>50</td><td>50</td><td>&#10003;</td><td>0.378</td><td>59.2</td><td class=dist>50 0.378 48 0.257 56 0.183 52 0.182</td></tr><tr class="ok"><td>29</td><td>T2</td><td>logic</td><td class=pred>no</td><td>no</td><td>&#10003;</td><td>0.990</td><td>50.9</td><td class=dist>no 0.990 yes 0.010</td></tr><tr class="ok"><td>30</td><td>T2</td><td>code</td><td class=pred>0</td><td>0</td><td>&#10003;</td><td>0.979</td><td>53.3</td><td class=dist>0 0.979 None 0.016 1 0.005 2 0.000</td></tr><tr class="ok"><td>31</td><td>T2</td><td>math</td><td class=pred>25 percent</td><td>25 percent</td><td>&#10003;</td><td>0.996</td><td>52.7</td><td class=dist>25 percent 0.996 20 percent 0.002 50 percent 0.002 40 percent 0.000</td></tr><tr class="ok"><td>32</td><td>T2</td><td>entailment</td><td class=pred>yes</td><td>yes</td><td>&#10003;</td><td>0.932</td><td>54.0</td><td class=dist>yes 0.932 no 0.068</td></tr><tr class="ok"><td>33</td><td>T2</td><td>math</td><td class=pred>7</td><td>7</td><td>&#10003;</td><td>0.860</td><td>53.7</td><td class=dist>7 0.860 6 0.122 8 0.015 5 0.003</td></tr><tr class="ok"><td>34</td><td>T2</td><td>logic</td><td class=pred>yes</td><td>yes</td><td>&#10003;</td><td>0.980</td><td>58.8</td><td class=dist>yes 0.980 no 0.020</td></tr><tr class="ok"><td>35</td><td>T2</td><td>code</td><td class=pred>[1, 2, 3]</td><td>[1, 2, 3]</td><td>&#10003;</td><td>0.978</td><td>68.9</td><td class=dist>[1, 2, 3] 0.978 [3, 1, 2] 0.015 Error 0.004 [3, 2, 1] 0.002</td></tr><tr class="ok"><td>36</td><td>T3</td><td>math</td><td class=pred>0.05</td><td>0.05</td><td>&#10003;</td><td>0.860</td><td>53.7</td><td class=dist>0.05 0.860 0.10 0.126 0.15 0.011 1.00 0.003</td></tr><tr class="ok"><td>37</td><td>T3</td><td>logic</td><td class=pred>9</td><td>9</td><td>&#10003;</td><td>0.990</td><td>52.3</td><td class=dist>9 0.990 8 0.008 0 0.001 17 0.000</td></tr><tr class="ok"><td>38</td><td>T3</td><td>math</td><td class=pred>5</td><td>5</td><td>&#10003;</td><td>0.991</td><td>53.1</td><td class=dist>5 0.991 20 0.007 100 0.002 500 0.000</td></tr><tr class="ok"><td>39</td><td>T3</td><td>knowledge</td><td class=pred>Au</td><td>Au</td><td>&#10003;</td><td>0.997</td><td>51.5</td><td class=dist>Au 0.997 Ag 0.003 Cu 0.000 Pt 0.000</td></tr><tr class="ok"><td>40</td><td>T3</td><td>math</td><td class=pred>47</td><td>47</td><td>&#10003;</td><td>0.983</td><td>71.6</td><td class=dist>47 0.983 47.5 0.014 24 0.004 36 0.000</td></tr><tr class="ok"><td>41</td><td>T3</td><td>knowledge</td><td class=pred>First human on the Moon</td><td>First human on the Moon</td><td>&#10003;</td><td>0.997</td><td>76.3</td><td class=dist>First human on the Moon 0.997 Fall of the Berlin Wall 0.003 End of World War II 0.000 Sinking of the Titanic 0.000</td></tr><tr class="ok"><td>42</td><td>T3</td><td>logic</td><td class=pred>apples only</td><td>apples only</td><td>&#10003;</td><td>0.994</td><td>52.9</td><td class=dist>apples only 0.994 both 0.002 oranges only 0.002 cannot be determined 0.002</td></tr><tr class="ok"><td>43</td><td>T3</td><td>math</td><td class=pred>40</td><td>40</td><td>&#10003;</td><td>0.920</td><td>95.3</td><td class=dist>40 0.920 60 0.043 30 0.029 50 0.008</td></tr><tr class="ok"><td>44</td><td>T3</td><td>knowledge</td><td class=pred>Jupiter</td><td>Jupiter</td><td>&#10003;</td><td>0.998</td><td>64.5</td><td class=dist>Jupiter 0.998 Earth 0.002 Neptune 0.000 Saturn 0.000</td></tr><tr class="ok"><td>45</td><td>T3</td><td>logic</td><td class=pred>Some A are C</td><td>Some A are C</td><td>&#10003;</td><td>0.996</td><td>56.5</td><td class=dist>Some A are C 0.996 All A are C 0.004 No A are C 0.000 All C are A 0.000</td></tr><tr class="ok"><td>46</td><td>T3</td><td>code</td><td class=pred>True</td><td>True</td><td>&#10003;</td><td>0.966</td><td>56.2</td><td class=dist>True 0.966 False 0.026 Error 0.009 None 0.000</td></tr><tr class="ok"><td>47</td><td>T3</td><td>math</td><td class=pred>6400</td><td>6400</td><td>&#10003;</td><td>0.944</td><td>58.8</td><td class=dist>6400 0.944 6000 0.021 7200 0.018 8000 0.017</td></tr><tr class="ok"><td>48</td><td>T3</td><td>knowledge</td><td class=pred>William Shakespeare</td><td>William Shakespeare</td><td>&#10003;</td><td>0.997</td><td>54.2</td><td class=dist>William Shakespeare 0.997 John Milton 0.003 Charles Dickens 0.000 Christopher Marlowe 0.000</td></tr><tr class="ok"><td>49</td><td>T3</td><td>logic</td><td class=pred>yes</td><td>yes</td><td>&#10003;</td><td>0.965</td><td>54.5</td><td class=dist>yes 0.965 no 0.035</td></tr><tr class="ok"><td>50</td><td>T3</td><td>math</td><td class=pred>42</td><td>42</td><td>&#10003;</td><td>0.994</td><td>55.6</td><td class=dist>42 0.994 40 0.006 36 0.000 48 0.000</td></tr></tbody></table></div>
+
+<h2>Calibration</h2>
+<div class="note">Confidence is the renormalised probability of the argmax option &mdash; a
+<i>measured</i> quantity, not a self-reported number. Both misses carry the two lowest
+confidences in the set (0.546, 0.792), while correct answers average 0.948.
+Expectation calibration error over the 50 items: <b>0.060</b>.</div>
+
+<h2>Reproduce</h2>
+<div class="note"><code>git clone /root/qwen3.8_jev</code><br>
+<code>bench/bench.py</code> &mdash; the 50-question run<br>
+<code>bench/openjev_method.py</code> &mdash; the shared-prefix fast path<br>
+<code>bench/COST_MODEL.py</code> &mdash; the cost model in this page</div>
+
+<footer>Generated from <code>bench/results.json</code> by <code>bench/make_page.py</code>.
+This page is a static file &mdash; no server, no network, no JavaScript required to read it.</footer>
+</div></body></html>

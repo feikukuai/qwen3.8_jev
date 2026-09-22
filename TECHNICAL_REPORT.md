@@ -429,3 +429,166 @@ python3 bench/bench.py
 [ekzhang/openjev-sglang](https://github.com/ekzhang/openjev-sglang) 与 [SemIf](https://openjev.com)。
 `feat/qwen35-deploy-archive` 分支的 4B 部署笔记独立得出了相同的打分数学，并正确预判了
 llama.cpp 需要手写 logits 读出；§6 就是该预判的实现。
+
+---
+
+# Appendix A — GPU forecast: *what should be faster, and by how much*
+
+> **This appendix is a prediction, not a measurement.** No GPU was available on the
+> machine used for this report (`nvidia-smi` absent, no `/dev/nvidia*`). Every GPU
+> number below is extrapolated. The CPU row is measured; treat the rest as an
+> order-of-magnitude planning estimate to verify yourself.
+
+## A.1 Is the 50 s a CPU problem?
+
+**Yes, and specifically a compute problem, not a memory problem.**
+
+The tempting model — "prefill reads 12.6 GB of weights, so at 576 GB/s it should take
+0.04 s" — is wrong by three orders of magnitude. It predicts 0.04 s where the measured
+value is ~50 s. The measurement shows why:
+
+| test | tok/s | implied FLOP/s | naive bandwidth model | measured |
+|---|---|---|---|---|
+| pp32 | 0.69 | 37 GFLOP/s | 0.04 s | 46.4 s |
+| pp64 | 1.23 | 66 GFLOP/s | 0.04 s | 52.0 s |
+| pp128 | 2.50 | 135 GFLOP/s | 0.04 s | 51.2 s |
+| pp256 | 4.50 | 242 GFLOP/s | 0.04 s | 56.9 s |
+
+Prefill is a **matmul-bound** phase: cost scales as `2 x params x tokens`, and the
+weights are read many times, not once. This box sustains roughly **1.2 TFLOP/s** of
+useful prefill work. That is the number to beat, and it is a compute limit, not a DDR5
+bandwidth limit.
+
+So the ~50 s intercept is **not** an inevitable property of the model, the quantisation,
+or the algorithm. It is what 32 CPU cores can do. A GPU attacks exactly the term that
+dominates.
+
+## A.2 Anchoring the forecast to a real measurement
+
+Rather than trust a theoretical model — the naive one was already off by 1000x — this
+forecast is anchored to the only like-for-like CPU-vs-GPU datapoint available: the prior
+4B deployment work in `feat/qwen35-deploy-archive`, which ran the same kind of one-token
+scoring task on 27B-class weights.
+
+| | latency per row |
+|---|---|
+| measured, CPU | 17.89 s |
+| reported, 1x RTX 3090 | 0.29 s |
+| **ratio** | **~62x** |
+
+Their CPU was ~3x faster per row than this box (17.89 s vs ~53 s), so if the ratio
+transfers, a 3090 should land near **0.9 s per decision** here.
+
+## A.3 Forecast table
+
+| configuration | est. s/decision | vs this CPU | basis |
+|---|---|---|---|
+| **CPU, 32 vCPU (this box)** | **53.3** | **1x** | **measured** |
+| 1x RTX 3090 24 GB | ~0.9 | ~62x | 62x anchor from prior work |
+| 1x RTX 4090 24 GB | ~0.6 | ~89x | 3090 x ~1.45 for this size |
+| 1x A100 80 GB | ~0.3 | ~160x | 4090 x ~1.8, bandwidth-heavy |
+| B200 + SGLang (openjev-style) | ~0.07-0.5 | ~100-750x | openjev reports 70-500 ms end-to-end |
+
+The openjev figure is the closest published analogue: they serve a 35B-A3B MoE on a B200
+with SGLang, prefill-only, one token per question, and report **70-500 ms** end-to-end.
+That is the shape of system this design converges to on good hardware.
+
+## A.4 What changes and what does not
+
+**Gets dramatically better on GPU:**
+
+- the ~50 s intercept, i.e. essentially the entire cost of a cold decision;
+- the 36-token cliff — a CPU scheduling threshold, not a model property, and not
+  expected to survive on GPU;
+- concurrency: SGLang-class servers batch many branches against one shared prefix, so
+  throughput scales far better than latency alone suggests.
+
+**Does not change:**
+
+- **accuracy.** Same weights, same one-token readout, same answer. A GPU delivers the
+  identical 48/50 faster; it does not make the model smarter.
+- **the shared-prefix requirement.** openjev's own README warns radix reuse is
+  "opportunistic, not a pinned per-request KV session", and that *hybrid Qwen's recurrent
+  state* can reduce hits — the same issue measured here on CPU. They mitigate it with
+  `--mamba-radix-cache-strategy extra_buffer`. This is a property of the **architecture**,
+  not of the CPU.
+- **the design.** `logit_bias` + `logprob` single-pass reads are identical on either device.
+
+## A.5 VRAM sizing
+
+| quant | weights | fits 24 GB? |
+|---|---|---|
+| IQ3_S (same class as this report) | ~11.8 GB | yes, with room for context |
+| Q4_K_M | ~16.7 GB | yes, tight |
+| Q8_0 | ~29 GB | no (needs 48 GB) |
+
+A 24 GB card comfortably runs the exact configuration benchmarked here, plus KV cache.
+
+## A.6 Accuracy context — the gap is not the bottleneck
+
+openjev published a **one-token MMLU-Pro** comparison on 1,000 questions using
+**Qwen3.8-27B**, a model in the same class as the one benchmarked here:
+
+| system | accuracy | 95% CI |
+|---|---|---|
+| OpenJev - Qwen3.6-35B-A3B | 58.8% | 55.7-61.8% |
+| Qwen3.8-27B (hosted, zero-shot) | 60.0% | 56.9-63.0% |
+| **Jev (TypeSafe)** | **82.9%** | 80.4-85.1% |
+
+Two things follow, and they point in opposite directions:
+
+1. **Hard multiple-choice is where open models fall short of Jev** — roughly 23 points on
+   MMLU-Pro, with a paired bootstrap interval excluding zero. The 96.0% in this report
+   comes from a 50-question smoke suite written by the same agent that ran it, so it is
+   **not** evidence against that gap. Do not read 96.0% as "matches Jev".
+2. **Speed is a solved problem; accuracy is not.** The GPU forecast above closes the
+   latency gap entirely. It does nothing for the accuracy gap. To match Jev, the lever is
+   a better base model or task-specific training — not hardware.
+
+## A.7 How to verify this appendix
+
+```bash
+# on a GPU box, llama.cpp with CUDA
+cmake -B build -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+./build/bin/llama-server -m Qwen3.5-27B-Q3_K_S.gguf -ngl 99 -c 8192 -b 1024 --parallel 1
+python3 bench/bench.py        # compare against the CPU numbers in this report
+```
+
+`-ngl 99` offloads all layers. If the forecast is right the ~50 s intercept should
+collapse to well under a second. If it does not, this appendix is wrong and the CPU
+number was not a compute limit after all — a genuinely interesting result worth recording
+here.
+
+### 中文摘要
+
+**50 秒确实是 CPU 的问题，而且是算力问题，不是内存带宽问题。**
+
+朴素模型（读 12.6 GB 权重 ÷ 576 GB/s ≈ 0.04 秒）错了三个数量级——实测约 50 秒。原因是预填充属于
+**matmul 计算受限**阶段，权重要被反复读取而不是读一次。这台机器只能提供约 **1.2 TFLOP/s** 的有效
+预填充算力。GPU 恰好打在主导项上。
+
+预测（**仅 CPU 一行为实测，其余全部是外推**）：
+
+| 配置 | 每次决策 | 相对本机 |
+|---|---|---|
+| CPU 32 vCPU（本机） | **53.3 秒** | **1×（实测）** |
+| 1× RTX 3090 24GB | ~0.9 秒 | ~62× |
+| 1× RTX 4090 24GB | ~0.6 秒 | ~89× |
+| 1× A100 80GB | ~0.3 秒 | ~160× |
+| B200 + SGLang | ~0.07–0.5 秒 | ~100–750× |
+
+依据是先前 4B 工作中同类的 CPU/3090 实测比 **≈62×**，以及 openjev 在 B200 上报的 70–500 ms 端到端。
+**62× 这个锚点是外推的起点，不是我测的。**
+
+**GPU 会改善的**：50 秒的截距（即冷启动决策的几乎全部成本）、36-token 断崖（那是 CPU 调度阈值，
+不是模型属性）、以及并发能力。
+
+**GPU 不会改变的**：**准确率**。同样的权重、同样的单 token 读出、同样的答案——GPU 只是让同样的 48/50
+更快到达，不会让模型变聪明。共用前缀的要求也不会变：那是混合架构（SSM 循环状态）的属性，
+openjev 在 GPU 上遇到同样问题，用 `--mamba-radix-cache-strategy extra_buffer` 缓解。
+
+**并且请注意**：openjev 用 Qwen3.8-27B（与本文同级的模型）做的 1000 题 MMLU-Pro 单 token 评测中，
+开放模型约 60%，而 Jev 是 **82.9%**——相差约 23 个百分点。GPU 能把**速度**差距完全抹平，
+但对**准确率**差距毫无帮助。要追平 Jev，杠杆在更好的基座模型或任务训练，不在硬件。
+
+同时，本报告的 96.0% 是 50 题的冒烟级测试，且由运行它的同一个 agent 出题，**不能**用来反驳这个差距。

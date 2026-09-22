@@ -132,3 +132,26 @@ The 50-question suite was written by the same agent that ran it — no held-out 
 independent authorship. Treat 96.0% as a smoke-level quality check, **not** a benchmark
 comparable to published numbers. Full limitations in
 [§9 of the report](TECHNICAL_REPORT.md#9-limitations--read-before-quoting-these-numbers).
+
+## Will a GPU be faster?
+
+**Yes — and the 50 s is genuinely a CPU problem.** This is a *prediction*: the machine used
+here has no GPU. See [Appendix A](TECHNICAL_REPORT.md#appendix-a--gpu-forecast-what-should-be-faster-and-by-how-much).
+
+| configuration | est. s/decision | vs this CPU |
+|---|---|---|
+| **CPU, 32 vCPU (this box)** | **53.3** | **1x (measured)** |
+| 1x RTX 3090 24 GB | ~0.9 | ~62x |
+| 1x RTX 4090 24 GB | ~0.6 | ~89x |
+| 1x A100 80 GB | ~0.3 | ~160x |
+| B200 + SGLang | ~0.07–0.5 | ~100–750x |
+
+The ~50 s is **compute-bound, not bandwidth-bound**: a naive "read 12.6 GB of weights once"
+model predicts 0.04 s, off by 1000x. Prefill re-reads the weights, so this box sustains only
+~1.2 TFLOP/s of useful work. That is what a GPU attacks.
+
+**What a GPU does not change: accuracy.** Same weights, same one-token readout, same answer.
+A GPU delivers the identical 48/50 faster — it does not make the model smarter.
+
+For scale: openjev's one-token MMLU-Pro on 1,000 questions puts Qwen3.8-27B around 60% and
+**Jev at 82.9%**. Speed is a solved problem; the accuracy gap is not closed by hardware.

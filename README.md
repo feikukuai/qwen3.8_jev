@@ -1,121 +1,134 @@
 # qwen3.8_jev
 
-Turn a **Qwen 27B GGUF into a System One / JEV-style decision model** by constraining the
-decoder on the *output side* only — grammar + logit_bias + logprob readout — with a
-**single forward pass** and **no second model** in the path.
+**English** | [中文](README.zh.md)
+
+Turn a Qwen 27B GGUF into a **System One / JEV-style decision function** by constraining
+the decoder on the output side only — `grammar` + `logit_bias` + `logprob` — with a
+single forward pass and **no second model** in the path.
 
 > `logit_bias` `logprob` `qwen3.8`
 
+**Result on pure CPU (no GPU): 48/50 = 96.0%**, ECE 0.060 — [full technical report](TECHNICAL_REPORT.md) · [verification page](https://feikukuai.github.io/qwen3.8_jev/verify/)
+
 ---
+
+## Quick start — one command
+
+```bash
+git clone https://github.com/feikukuai/qwen3.8_jev.git && cd qwen3.8_jev
+python3 deploy.py                 # downloads model, builds llama.cpp, serves, smoke-tests
+```
+
+That is the whole setup. `deploy.py` fetches the model, builds llama.cpp with native
+CPU flags (plus OpenBLAS if present), starts the server with the correct flags, and runs
+a smoke decision to prove it works.
+
+```bash
+python3 deploy.py --list          # show tiers and sizes
+python3 deploy.py --tier 4b       # small tier (2.7 GB, runs on a laptop)
+python3 deploy.py --tier 27b-gsq  # ISTA-DASLab GSQ-RCO IQ3_S
+python3 deploy.py --mirror        # use hf-mirror.com for slow links
+```
+
+Then benchmark it:
+
+```bash
+python3 bench/bench.py            # the 50-question suite
+```
 
 ## The idea in one paragraph
 
-A chat LLM wastes its decoder on text you then have to parse. A System One model instead
-takes a *state* plus a *typed question* and returns a **decision with calibrated
-probabilities** in a single pass. You do not need to retrain anything to get most of this
-behaviour: declare the options as `A. ... B. ... C. ...`, then
+A chat LLM wastes its decoder on text you then have to parse. A System One model takes
+a *state* plus a *typed question* and returns a **decision with calibrated
+probabilities** in a single pass. You do not need to retrain anything:
 
-* **grammar (GBNF)** — make only option letters reachable,
-* **logit_bias** — hard-mask every token that is not a declared option letter,
+* **grammar (GBNF)** — make only option letters reachable;
+* **logit_bias** — hard-mask every token that is not a declared option letter;
 * **logprob** — renormalise the first-token distribution over those letters.
 
 That distribution *is* the answer, with a confidence attached. The model never writes
-text, so it cannot hallucinate prose or go off the rails.
+text, so it cannot hallucinate prose or go off the rails, and there is no JSON to parse.
 
-## Result on this box (pure CPU, no GPU)
+## Models
+
+| tier | model | size | download |
+|---|---|---|---|
+| `27b` | [Qwen3.5-27B-Q3_K_S](https://huggingface.co/unsloth/Qwen3.5-27B-GGUF) | 12.29 GB | [link](https://huggingface.co/unsloth/Qwen3.5-27B-GGUF/resolve/main/Qwen3.5-27B-Q3_K_S.gguf) · [mirror](https://hf-mirror.com/unsloth/Qwen3.5-27B-GGUF/resolve/main/Qwen3.5-27B-Q3_K_S.gguf) |
+| `27b-gsq` | [Qwen3.8-27B-GSQ-RCO-IQ3_S](https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF) | 11.77 GB | [link](https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Qwen3.8-27B-GSQ-RCO-IQ3_S.gguf) · [mirror](https://hf-mirror.com/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Qwen3.8-27B-GSQ-RCO-IQ3_S.gguf) |
+| `4b` | [Qwen3.5-4B-Q4_K_M](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF) | 2.74 GB | [link](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf) · [mirror](https://hf-mirror.com/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf) |
+
+`deploy.py` downloads these for you. **Only the `27b` tier has been benchmarked** (48/50);
+the other tiers are provided as deployment options, not as accuracy claims — see
+[Limitations](TECHNICAL_REPORT.md#9-limitations--read-before-quoting-these-numbers).
+
+## Measured performance
 
 | | value |
 |---|---|
-| CPU | AMD EPYC 9K65 (AVX-512 + VNNI), 32 vCPU / 64 GB, **no GPU** |
-| Engine | llama.cpp 0.4.1-dev, `-ngl 0`, OpenBLAS, 32 threads |
-| Model | `Qwen3.5-27B-Q3_K_S.gguf` (12.29 GB, 26.9 B params, hybrid attention + SSM) |
+| Accuracy | **48/50 = 96.0%** (T1 93.3%, T2 95.0%, T3 100%) |
+| ECE | 0.060 |
+| Latency, one decision per prefill | ~50–56 s |
+| Latency, shared-prefix branches | **~1.6 s** |
+| Cache hit | ~0.34 s |
 
-**50-question benchmark — 96.0% (48/50)** across sentiment / topic / math / logic /
-entailment / code / world-knowledge, tiers 1-3, with calibrated confidence
-(wrong answers were not confident; see `bench/REPORT.md`).
+Hardware: AMD EPYC 9K65, 32 vCPU, 64 GB RAM, **no GPU**; llama.cpp 0.4.1;
+`Qwen3.5-27B-Q3_K_S`.
 
-Speed measured with `llama-bench`:
+### The cost cliff — read this before benchmarking
 
-| test | t/s |
+| prompt tokens | latency |
 |---|---|
-| pp32 | 0.69 |
-| pp64 | 1.23 |
-| pp128 | 2.50 |
-| pp256 | 4.50 |
-| tg8 | 5.45 |
+| 35 | 1.91 s |
+| **36** | **49.03 s** |
+| 208 | 75.10 s |
 
-### The important finding: latency is a ~fixed floor
+There is a sharp discontinuity at **36 prompt tokens**. A realistic decision prompt is
+always above it, so the ~50 s intercept always applies — and shortening the prompt is
+futile (200 tokens ≈ 3 s). **Amortise instead:** share one warmed prefix across many
+questions and every decision after the first costs ~1.6 s.
 
-| prompt length | decision latency |
-|---|---|
-| 36 tok | 52.2 s |
-| 126 tok | 53.2 s |
-| 426 tok | 58.7 s |
-| 1026 tok | 67.9 s |
+Two operational requirements:
 
-Cost is **almost independent of prompt length** (~50 s fixed + ~0.017 s/token). It is
-dominated by rebuilding the hybrid **SSM / Gated-DeltaNet recurrent state** on every fresh
-prompt — which is also why the KV prefix cache does *not* help across different states.
-
-**Consequence:** one decision per pass is unusable interactively. Two ways to fix it:
-
-| strategy | per decision |
-|---|---|
-| sequential, 1 decision per prefill | **~50-56 s** |
-| **grammar-batched, N=6 per prefill** | **~9.2 s** |
-| exact-repeat (KV cache hit) | **~0.35 s** |
-
-Batching N independent decisions into one constrained pass buys a **5.4x speedup**, because
-the fixed recurrent-state cost is paid once and amortised over all N.
+1. an **exact** shared prefix (same state, per-question part last);
+2. a **single large slot** — `--parallel 1 -c 8192`. With `--parallel 4` the context is
+   sharded and the cache thrashes (observed alternating 1.6 s / 58 s).
 
 ## Files
 
 | file | purpose |
 |---|---|
-| `bench/system_one.py` | single-pass classifier client (logit_bias + grammar + logprob) |
-| `bench/batched_system_one.py` | N decisions in one prefill — the fast path |
-| `bench/questions.py` | the 50-question suite (3 tiers, 7 task types) |
-| `bench/bench.py` | benchmark runner, writes `results.json` |
-| `bench/REPORT.md` | full results, latency analysis, limitations |
+| [`TECHNICAL_REPORT.md`](TECHNICAL_REPORT.md) | full bilingual report: results, cost model, limitations |
+| [`deploy.py`](deploy.py) | one-click deploy |
+| [`bench/system_one.py`](bench/system_one.py) | single-pass classifier client |
+| [`bench/openjev_method.py`](bench/openjev_method.py) | shared-prefix fast path |
+| [`bench/batched_system_one.py`](bench/batched_system_one.py) | N decisions in one prefill |
+| [`bench/COST_MODEL.py`](bench/COST_MODEL.py) | the cost model |
+| [`bench/questions.py`](bench/questions.py) | the 50-question suite |
+| [`bench/bench.py`](bench/bench.py) | benchmark runner |
+| [`bench/results.json`](bench/results.json) | raw run data |
+| [`verify/index.html`](https://feikukuai.github.io/qwen3.8_jev/verify/) | static verification page |
 
-## Gotcha that mattered most
+## The gotcha that mattered most
 
-`/v1/chat/completions` returns `top_logprobs` of the **unconstrained** distribution, so the
-option letters may be absent from the returned candidates and **cannot be renormalised**
-(measured: ` A` / ` B` missing entirely from top-20 while the sampler still emitted `A`).
-
+Use `/v1/completions`, **not** `/v1/chat/completions`. The chat endpoint returns
+`top_logprobs` of the **unconstrained** distribution, so the option letters can be
+missing from the returned candidates entirely and cannot be renormalised (observed:
+under `logit_bias` the sampler emitted `A` while ` A` and ` B` were absent from top-20).
 `/v1/completions` returns the raw-logit logprobs for **both** declared letters even with
-`logit_bias` applied. Decisions must go through the completions endpoint.
+`logit_bias` applied.
 
-## Reproduce
-
-```bash
-# model
-aria2c -x 16 -s 16 -o Qwen3.5-27B-Q3_K_S.gguf \
-  https://huggingface.co/unsloth/Qwen3.5-27B-GGUF/resolve/main/Qwen3.5-27B-Q3_K_S.gguf
-
-# engine (OpenBLAS required for the BLAS backend)
-apt-get install -y cmake libopenblas-dev
-git clone --depth 1 https://github.com/ggml-org/llama.cpp && cd llama.cpp
-cmake -B build -DGGML_NATIVE=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS \
-      -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j 32
-
-# serve
-./build/bin/llama-server -m Qwen3.5-27B-Q3_K_S.gguf --host 127.0.0.1 --port 8080 \
-  -t 32 -c 4096 -b 1024 -ub 1024 --parallel 4 -ngl 0 --no-warmup
-
-# benchmark
-python3 bench/bench.py
-```
-
-## Related prior art
+## Related work
 
 [TypeSafe AI's Jev / System One](https://typesafe.ai/blog/introducing-system-one-models-and-jev)
-is the concept this reproduces on an open base model. Independent from-scratch
-reproductions worth reading:
-[chaoliangUNSW/Jev-Style-Qwen3.5-2B-Decision](https://huggingface.co/chaoliangUNSW/Jev-Style-Qwen3.5-2B-Decision-GGUF)
-(LoRA trained, calibrated, 1 token per decision) and
-[smanx/llm2jev](https://github.com/smanx/llm2jev) — a *different* approach: it wraps an LLM
-behind the Jev **API contract**, asking for JSON text and parsing it. That is protocol
+is the concept. [ekzhang/openjev-sglang](https://github.com/ekzhang/openjev-sglang) and
+[SemIf](https://openjev.com) implement the same decoder-side principle on GPU with
+`token_ids_logprob`. [smanx/llm2jev](https://github.com/smanx/llm2jev) takes a *different*
+route: it wraps an LLM behind the Jev **API contract** and asks for JSON text — protocol
 emulation, not decoder-side classification.
+
+## Licence and honesty note
+
+The 50-question suite was written by the same agent that ran it — no held-out split, no
+independent authorship. Treat 96.0% as a smoke-level quality check, **not** a benchmark
+comparable to published numbers. Full limitations in
+[§9 of the report](TECHNICAL_REPORT.md#9-limitations--read-before-quoting-these-numbers).

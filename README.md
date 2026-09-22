@@ -138,13 +138,17 @@ comparable to published numbers. Full limitations in
 **Yes — and the 50 s is genuinely a CPU problem.** This is a *prediction*: the machine used
 here has no GPU. See [Appendix A](TECHNICAL_REPORT.md#appendix-a--gpu-forecast-what-should-be-faster-and-by-how-much).
 
-| configuration | est. s/decision | vs this CPU |
-|---|---|---|
-| **CPU, 32 vCPU (this box)** | **53.3** | **1x (measured)** |
-| 1x RTX 3090 24 GB | ~0.9 | ~62x |
-| 1x RTX 4090 24 GB | ~0.6 | ~89x |
-| 1x A100 80 GB | ~0.3 | ~160x |
-| B200 + SGLang | ~0.07–0.5 | ~100–750x |
+| accelerator | memory / bandwidth | latency per decision | status |
+|---|---|---:|---|
+| **CPU-only baseline** (AMD EPYC 9K65, 32 vCPU) | DDR5, ~0.58 TB/s | **53.3 s** | **measured** |
+| 1 x NVIDIA RTX 3090 | 24 GB GDDR6X, 0.94 TB/s | ~0.9 s | extrapolated |
+| 1 x NVIDIA RTX 4090 | 24 GB GDDR6X, 1.01 TB/s | ~0.6 s | extrapolated |
+| 1 x NVIDIA A100 | 80 GB HBM2e, 2.04 TB/s | ~0.3 s | extrapolated |
+| NVIDIA B200 + SGLang | 192 GB HBM3e, 8.0 TB/s | 0.07-0.5 s | published range |
+
+Ratios are stated against the **CPU-only baseline defined in this report**, not against any
+particular deployment: the 3090 figure is a ~59-fold reduction, the A100 ~163-fold. Only the
+first row is measured here; the remainder are extrapolations derived as described below.
 
 The ~50 s is **compute-bound, not bandwidth-bound**: a naive "read 12.6 GB of weights once"
 model predicts 0.04 s, off by 1000x. Prefill re-reads the weights, so this box sustains only

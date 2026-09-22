@@ -481,13 +481,17 @@ transfers, a 3090 should land near **0.9 s per decision** here.
 
 ## A.3 Forecast table
 
-| configuration | est. s/decision | vs this CPU | basis |
-|---|---|---|---|
-| **CPU, 32 vCPU (this box)** | **53.3** | **1x** | **measured** |
-| 1x RTX 3090 24 GB | ~0.9 | ~62x | 62x anchor from prior work |
-| 1x RTX 4090 24 GB | ~0.6 | ~89x | 3090 x ~1.45 for this size |
-| 1x A100 80 GB | ~0.3 | ~160x | 4090 x ~1.8, bandwidth-heavy |
-| B200 + SGLang (openjev-style) | ~0.07-0.5 | ~100-750x | openjev reports 70-500 ms end-to-end |
+| accelerator | memory / bandwidth | latency per decision | status |
+|---|---|---:|---|
+| **CPU-only baseline** (AMD EPYC 9K65, 32 vCPU) | DDR5, ~0.58 TB/s | **53.3 s** | **measured** |
+| 1 x NVIDIA RTX 3090 | 24 GB GDDR6X, 0.94 TB/s | ~0.9 s | extrapolated |
+| 1 x NVIDIA RTX 4090 | 24 GB GDDR6X, 1.01 TB/s | ~0.6 s | extrapolated |
+| 1 x NVIDIA A100 | 80 GB HBM2e, 2.04 TB/s | ~0.3 s | extrapolated |
+| NVIDIA B200 + SGLang | 192 GB HBM3e, 8.0 TB/s | 0.07-0.5 s | published range |
+
+Ratios are stated against the **CPU-only baseline defined in this report**, not against any
+particular deployment: the 3090 figure is a ~59-fold reduction, the A100 ~163-fold. Only the
+first row is measured here; the remainder are extrapolations derived as described in §A.2.
 
 The openjev figure is the closest published analogue: they serve a 35B-A3B MoE on a B200
 with SGLang, prefill-only, one token per question, and report **70-500 ms** end-to-end.
@@ -569,13 +573,16 @@ here.
 
 预测（**仅 CPU 一行为实测，其余全部是外推**）：
 
-| 配置 | 每次决策 | 相对本机 |
-|---|---|---|
-| CPU 32 vCPU（本机） | **53.3 秒** | **1×（实测）** |
-| 1× RTX 3090 24GB | ~0.9 秒 | ~62× |
-| 1× RTX 4090 24GB | ~0.6 秒 | ~89× |
-| 1× A100 80GB | ~0.3 秒 | ~160× |
-| B200 + SGLang | ~0.07–0.5 秒 | ~100–750× |
+| 加速器 | 显存 / 带宽 | 每次决策延迟 | 证据状态 |
+|---|---|---:|---|
+| **纯 CPU 基线**（AMD EPYC 9K65, 32 vCPU） | DDR5，约 0.58 TB/s | **53.3 秒** | **实测** |
+| 1 × NVIDIA RTX 3090 | 24 GB GDDR6X，0.94 TB/s | ~0.9 秒 | 外推 |
+| 1 × NVIDIA RTX 4090 | 24 GB GDDR6X，1.01 TB/s | ~0.6 秒 | 外推 |
+| 1 × NVIDIA A100 | 80 GB HBM2e，2.04 TB/s | ~0.3 秒 | 外推 |
+| NVIDIA B200 + SGLang | 192 GB HBM3e，8.0 TB/s | 0.07–0.5 秒 | 已发表区间 |
+
+倍数一律相对于**本报告定义的纯 CPU 基线**：3090 约 59 倍，A100 约 163 倍。
+下表中**只有第一行是实测**，其余为外推。
 
 依据是先前 4B 工作中同类的 CPU/3090 实测比 **≈62×**，以及 openjev 在 B200 上报的 70–500 ms 端到端。
 **62× 这个锚点是外推的起点，不是我测的。**
@@ -592,3 +599,151 @@ openjev 在 GPU 上遇到同样问题，用 `--mamba-radix-cache-strategy extra_
 但对**准确率**差距毫无帮助。要追平 Jev，杠杆在更好的基座模型或任务训练，不在硬件。
 
 同时，本报告的 96.0% 是 50 题的冒烟级测试，且由运行它的同一个 agent 出题，**不能**用来反驳这个差距。
+
+---
+
+# Appendix B — Does input size affect decision latency?
+
+**Measured, not predicted.** One decision, ten options, state scaled from 50 to
+10,000 Chinese characters (the ~10k-character case is the "万字" scale). Every prompt
+carries a unique nonce so the prefix cache cannot mask the cost. One call per size,
+sequential, server otherwise idle.
+
+## B.1 Method
+
+Prompt template (identical at every size; only the state grows):
+
+```
+你是一个决策函数。阅读状态，然后从选项中选择恰好一个答案。
+
+[状态]
+<state: 50 … 10,000 Chinese characters>
+
+[问题]
+这个工单最可能的根本原因是什么？
+
+[选项]
+A. 账户锁定需要人工解锁
+B. 密码重置邮件未送达
+ … 10 options total …
+J. 无法确定具体原因
+
+答案：
+```
+
+Readout: one token, `logit_bias` over `A`–`J`, softmax of the ten letter logprobs.
+Token counts measured with `/tokenize`, not estimated.
+
+## B.2 Results
+
+| state chars | prompt tokens | latency | effective tok/s | answer |
+|---:|---:|---:|---:|---|
+| 50 | 158 | 51.5 s | 3.07 | 无法确定具体原因 |
+| 200 | 250 | 53.2 s | 4.70 | 账户锁定需要人工解锁 |
+| 500 | 435 | 60.4 s | 7.20 | 账户锁定需要人工解锁 |
+| 1,000 | 745 | 69.0 s | 10.79 | 账户锁定需要人工解锁 |
+| 2,000 | 1,363 | 128.7 s | 10.60 | 账户锁定需要人工解锁 |
+| 4,000 | 2,600 | 233.3 s | 11.15 | 账户锁定需要人工解锁 |
+| 6,000 | 3,837 | 340.2 s | 11.28 | 账户锁定需要人工解锁 |
+| 8,000 | 5,073 | 382.0 s | 13.28 | 账户锁定需要人工解锁 |
+| **10,000 (万字)** | **6,310** | **510.0 s** | **12.37** | 账户锁定需要人工解锁 |
+
+## B.3 What this shows
+
+**1. Input size matters a great deal — the earlier "flat floor" reading is dead.**
+A 15-character-class question costs 51.5 s; a 万字 decision costs **510 s — 8.5 minutes**,
+a 9.9× increase. The 36-token cliff of §5.1 is real but it is only the *onset* of the cost,
+not the whole of it.
+
+**2. Above ~1,000 tokens the cost is cleanly linear.** Fitting only the large-prompt points:
+
+```
+latency  ≈  0.0737 × tokens  +  36.1 s
+         ≈  73.7 ms per prompt token  (13.6 tok/s marginal)
+```
+
+The 36 s intercept is the fixed per-call setup, and 73.7 ms/token is the marginal prefill
+cost. This is consistent with `llama-bench` on the same model (pp256 = 4.50 tok/s at small
+batch, rising toward ~13 tok/s as the batch grows — large batches amortise the fixed cost).
+
+**3. Throughput is not constant; it rises with prompt length.**
+
+| regime | effective throughput |
+|---|---|
+| < 1,000 tokens | 6.4 tok/s average |
+| > 1,000 tokens | 11.7 tok/s average |
+
+Short prompts are dominated by the fixed per-call cost; long prompts amortise it. This is
+why the small-prompt column looks so flat (51.5 s → 69.0 s while tokens grow 4.7×) and then
+goes linear once the fixed term stops dominating.
+
+**4. Extrapolation.** Using the linear fit:
+
+| prompt tokens | predicted latency |
+|---:|---:|
+| 10,000 | 773 s (13 min) |
+| 20,000 | 1,510 s (25 min) |
+| 32,768 (openjev's per-branch cap) | 2,451 s (41 min) |
+
+These are extrapolations beyond the measured range and should be treated as such. The
+practical implication is blunt: **on CPU, long-context decisions do not scale.** A 万字
+decision at 8.5 minutes is already past interactive use, and a 32k-token one would be
+roughly 41 minutes.
+
+**5. The answer was stable.** Eight of nine sizes returned the same option, including every
+size from 200 characters upward; only the smallest (50-character) prompt differed, and
+that prompt is genuinely under-specified — it omits the evidence the other sizes carry.
+Precision at 10,000 characters did not degrade, it just cost 8.5 minutes.
+
+**6. Implications for the shared-prefix optimisation.** Appendix §5.2 showed that
+amortising one warmed prefix across many questions drops the per-decision cost to ~1.6 s.
+Appendix B explains *why* that works so well: the 73.7 ms/token term is what a warm prefix
+eliminates, and it is the entire cost of a long-context decision.
+
+| scenario | 万字 (6,310 tok) |
+|---|---|
+| cold, one decision | 510 s |
+| shared prefix, first decision pays the warm | 510 s once |
+| shared prefix, each *additional* question | ~1.6 s |
+
+So a 万字 state queried with twenty typed questions costs 510 s + 20×1.6 s ≈ **542 s total**,
+not 20×510 s. That is the whole argument for the shared-prefix design.
+
+## B.4 Caveats
+
+- Single run per size, on an otherwise idle server. No error bars.
+- `n_ctx` was 8192; the 10,000-character case (6,310 tokens) fits, but larger states would
+  need a bigger context and would change memory pressure.
+- Filler text is repetitive, so tokenisation is unusually regular; real prose at the same
+  character count typically yields more tokens.
+- CPU only. Appendix A predicts a GPU removes most of both terms, but that is untested.
+
+### 中文摘要
+
+**实测结论：输入越长越慢，而且慢得多。之前那个「固定 50 秒地板」的说法彻底作废。**
+
+一个 **万字（10,000 字）状态 + 10 个选项**的决策，本地实测 **510 秒（8.5 分钟）**；
+而 50 字的小决策只要 51.5 秒——**相差 9.9 倍**。
+
+**1,000 token 以上是干净的线性关系：**
+
+```
+延迟 ≈ 0.0737 × token 数 + 36.1 秒
+     ≈ 每个 prompt token 73.7 毫秒（边际吞吐 13.6 tok/s）
+```
+
+36 秒是每次调用的固定开销，73.7 毫秒/token 是边际预填充成本。吞吐量并非恒定——短 prompt 平均
+6.4 tok/s，长 prompt 平均 11.7 tok/s，因为长 prompt 摊薄了固定开销。
+
+**外推**（超出实测范围，仅供参考）：20,000 token ≈ 25 分钟；32,768 token ≈ 41 分钟。
+**所以在 CPU 上，长上下文决策不可用**——万字已经 8.5 分钟，远超交互可接受范围。
+
+**答案稳定性没问题**：9 个尺寸中有 8 个给出相同选项（200 字以上全部一致），只有最小那个
+50 字的 prompt 不同，而那个 prompt 本身信息不足。十万字并没有让精度下降，只是花了 8.5 分钟。
+
+**这对共用前缀方案是强有力的佐证**：万字状态用 20 个问题去问，总成本是
+510 秒 + 20 × 1.6 秒 ≈ **542 秒**，而不是 20 × 510 秒。那 73.7 ms/token 正是热前缀能消除的部分。
+
+**注意**：每个尺寸只跑了一次，无误差棒；10,000 字那档用了 6,310 token，接近 `n_ctx=8192` 上限；
+填充文本是重复的，真实散文在同样字数下 token 会更多；以上全部是纯 CPU，附录 A 预测 GPU 能消掉
+这两项成本的大部分，但**未经验证**。

@@ -1,0 +1,1310 @@
+{
+ "accuracy": 0.96,
+ "n": 50,
+ "results": [
+  {
+   "id": 1,
+   "tier": 1,
+   "type": "sentiment",
+   "pred": "positive",
+   "answer": "positive",
+   "ok": true,
+   "conf": 0.9882,
+   "latency_s": 52.6572,
+   "dist": [
+    [
+     "positive",
+     0.9882
+    ],
+    [
+     "negative",
+     0.0118
+    ]
+   ]
+  },
+  {
+   "id": 2,
+   "tier": 1,
+   "type": "topic",
+   "pred": "Business",
+   "answer": "Business",
+   "ok": true,
+   "conf": 0.9754,
+   "latency_s": 53.4484,
+   "dist": [
+    [
+     "Business",
+     0.9754
+    ],
+    [
+     "Science/Technology",
+     0.0184
+    ],
+    [
+     "Sports",
+     0.0043
+    ],
+    [
+     "World",
+     0.0019
+    ]
+   ]
+  },
+  {
+   "id": 3,
+   "tier": 1,
+   "type": "math",
+   "pred": "43",
+   "answer": "43",
+   "ok": true,
+   "conf": 0.6759,
+   "latency_s": 52.3145,
+   "dist": [
+    [
+     "43",
+     0.6759
+    ],
+    [
+     "42",
+     0.1499
+    ],
+    [
+     "44",
+     0.1285
+    ],
+    [
+     "41",
+     0.0457
+    ]
+   ]
+  },
+  {
+   "id": 4,
+   "tier": 1,
+   "type": "math",
+   "pred": "63",
+   "answer": "63",
+   "ok": true,
+   "conf": 0.9963,
+   "latency_s": 52.1861,
+   "dist": [
+    [
+     "63",
+     0.9963
+    ],
+    [
+     "56",
+     0.002
+    ],
+    [
+     "81",
+     0.0017
+    ],
+    [
+     "72",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 5,
+   "tier": 1,
+   "type": "capital",
+   "pred": "Paris",
+   "answer": "Paris",
+   "ok": true,
+   "conf": 0.9983,
+   "latency_s": 53.8542,
+   "dist": [
+    [
+     "Paris",
+     0.9983
+    ],
+    [
+     "Nice",
+     0.0017
+    ],
+    [
+     "Lyon",
+     0.0
+    ],
+    [
+     "Marseille",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 6,
+   "tier": 1,
+   "type": "sentiment",
+   "pred": "negative",
+   "answer": "negative",
+   "ok": true,
+   "conf": 0.9932,
+   "latency_s": 52.3066,
+   "dist": [
+    [
+     "negative",
+     0.9932
+    ],
+    [
+     "positive",
+     0.0068
+    ]
+   ]
+  },
+  {
+   "id": 7,
+   "tier": 1,
+   "type": "entailment",
+   "pred": "yes",
+   "answer": "yes",
+   "ok": true,
+   "conf": 0.9689,
+   "latency_s": 53.6485,
+   "dist": [
+    [
+     "yes",
+     0.9689
+    ],
+    [
+     "no",
+     0.0311
+    ]
+   ]
+  },
+  {
+   "id": 8,
+   "tier": 1,
+   "type": "topic",
+   "pred": "Sports",
+   "answer": "Sports",
+   "ok": true,
+   "conf": 0.9972,
+   "latency_s": 56.5719,
+   "dist": [
+    [
+     "Sports",
+     0.9972
+    ],
+    [
+     "Business",
+     0.0016
+    ],
+    [
+     "World",
+     0.0012
+    ],
+    [
+     "Science/Technology",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 9,
+   "tier": 1,
+   "type": "math",
+   "pred": "63",
+   "answer": "63",
+   "ok": true,
+   "conf": 0.7995,
+   "latency_s": 59.6318,
+   "dist": [
+    [
+     "63",
+     0.7995
+    ],
+    [
+     "53",
+     0.0919
+    ],
+    [
+     "73",
+     0.0644
+    ],
+    [
+     "67",
+     0.0442
+    ]
+   ]
+  },
+  {
+   "id": 10,
+   "tier": 1,
+   "type": "sentiment",
+   "pred": "positive",
+   "answer": "positive",
+   "ok": true,
+   "conf": 0.9893,
+   "latency_s": 53.4712,
+   "dist": [
+    [
+     "positive",
+     0.9893
+    ],
+    [
+     "negative",
+     0.0107
+    ]
+   ]
+  },
+  {
+   "id": 11,
+   "tier": 1,
+   "type": "capital",
+   "pred": "Tokyo",
+   "answer": "Tokyo",
+   "ok": true,
+   "conf": 0.9889,
+   "latency_s": 52.9938,
+   "dist": [
+    [
+     "Tokyo",
+     0.9889
+    ],
+    [
+     "Seoul",
+     0.011
+    ],
+    [
+     "Kyoto",
+     0.0
+    ],
+    [
+     "Osaka",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 12,
+   "tier": 1,
+   "type": "math",
+   "pred": "12",
+   "answer": "12",
+   "ok": true,
+   "conf": 0.9656,
+   "latency_s": 52.4367,
+   "dist": [
+    [
+     "12",
+     0.9656
+    ],
+    [
+     "14",
+     0.0276
+    ],
+    [
+     "11",
+     0.0049
+    ],
+    [
+     "10",
+     0.002
+    ]
+   ]
+  },
+  {
+   "id": 13,
+   "tier": 1,
+   "type": "entailment",
+   "pred": "no",
+   "answer": "no",
+   "ok": true,
+   "conf": 0.9883,
+   "latency_s": 52.9713,
+   "dist": [
+    [
+     "no",
+     0.9883
+    ],
+    [
+     "yes",
+     0.0117
+    ]
+   ]
+  },
+  {
+   "id": 14,
+   "tier": 1,
+   "type": "topic",
+   "pred": "Science/Technology",
+   "answer": "Science/Technology",
+   "ok": true,
+   "conf": 0.9983,
+   "latency_s": 52.2094,
+   "dist": [
+    [
+     "Science/Technology",
+     0.9983
+    ],
+    [
+     "World",
+     0.0017
+    ],
+    [
+     "Sports",
+     0.0
+    ],
+    [
+     "Business",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 15,
+   "tier": 1,
+   "type": "math",
+   "pred": "21",
+   "answer": "23",
+   "ok": false,
+   "conf": 0.5461,
+   "latency_s": 52.8847,
+   "dist": [
+    [
+     "21",
+     0.5461
+    ],
+    [
+     "22",
+     0.2475
+    ],
+    [
+     "23",
+     0.1786
+    ],
+    [
+     "24",
+     0.0279
+    ]
+   ]
+  },
+  {
+   "id": 16,
+   "tier": 2,
+   "type": "math",
+   "pred": "322",
+   "answer": "322",
+   "ok": true,
+   "conf": 0.9949,
+   "latency_s": 52.7326,
+   "dist": [
+    [
+     "322",
+     0.9949
+    ],
+    [
+     "332",
+     0.0029
+    ],
+    [
+     "312",
+     0.0022
+    ],
+    [
+     "342",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 17,
+   "tier": 2,
+   "type": "logic",
+   "pred": "yes",
+   "answer": "yes",
+   "ok": true,
+   "conf": 0.9818,
+   "latency_s": 51.6865,
+   "dist": [
+    [
+     "yes",
+     0.9818
+    ],
+    [
+     "no",
+     0.0182
+    ]
+   ]
+  },
+  {
+   "id": 18,
+   "tier": 2,
+   "type": "math",
+   "pred": "32",
+   "answer": "30",
+   "ok": false,
+   "conf": 0.7923,
+   "latency_s": 54.7178,
+   "dist": [
+    [
+     "32",
+     0.7923
+    ],
+    [
+     "28",
+     0.1465
+    ],
+    [
+     "30",
+     0.0479
+    ],
+    [
+     "35",
+     0.0132
+    ]
+   ]
+  },
+  {
+   "id": 19,
+   "tier": 2,
+   "type": "entailment",
+   "pred": "no",
+   "answer": "no",
+   "ok": true,
+   "conf": 0.9848,
+   "latency_s": 52.5539,
+   "dist": [
+    [
+     "no",
+     0.9848
+    ],
+    [
+     "yes",
+     0.0152
+    ]
+   ]
+  },
+  {
+   "id": 20,
+   "tier": 2,
+   "type": "code",
+   "pred": "[2, 3]",
+   "answer": "[2, 3]",
+   "ok": true,
+   "conf": 0.9861,
+   "latency_s": 53.9168,
+   "dist": [
+    [
+     "[2, 3]",
+     0.9861
+    ],
+    [
+     "[2, 3, 4]",
+     0.0065
+    ],
+    [
+     "[1, 2]",
+     0.0054
+    ],
+    [
+     "[3, 4]",
+     0.0021
+    ]
+   ]
+  },
+  {
+   "id": 21,
+   "tier": 2,
+   "type": "logic",
+   "pred": "no",
+   "answer": "no",
+   "ok": true,
+   "conf": 0.9863,
+   "latency_s": 53.7119,
+   "dist": [
+    [
+     "no",
+     0.9863
+    ],
+    [
+     "yes",
+     0.0137
+    ]
+   ]
+  },
+  {
+   "id": 22,
+   "tier": 2,
+   "type": "math",
+   "pred": "36",
+   "answer": "36",
+   "ok": true,
+   "conf": 0.7978,
+   "latency_s": 56.3214,
+   "dist": [
+    [
+     "36",
+     0.7978
+    ],
+    [
+     "30",
+     0.1795
+    ],
+    [
+     "40",
+     0.0175
+    ],
+    [
+     "24",
+     0.0052
+    ]
+   ]
+  },
+  {
+   "id": 23,
+   "tier": 2,
+   "type": "code",
+   "pred": "5",
+   "answer": "5",
+   "ok": true,
+   "conf": 0.9856,
+   "latency_s": 54.8545,
+   "dist": [
+    [
+     "5",
+     0.9856
+    ],
+    [
+     "4",
+     0.0065
+    ],
+    [
+     "Error",
+     0.0058
+    ],
+    [
+     "6",
+     0.0022
+    ]
+   ]
+  },
+  {
+   "id": 24,
+   "tier": 2,
+   "type": "entailment",
+   "pred": "no",
+   "answer": "no",
+   "ok": true,
+   "conf": 0.9842,
+   "latency_s": 58.7392,
+   "dist": [
+    [
+     "no",
+     0.9842
+    ],
+    [
+     "yes",
+     0.0158
+    ]
+   ]
+  },
+  {
+   "id": 25,
+   "tier": 2,
+   "type": "math",
+   "pred": "150",
+   "answer": "150",
+   "ok": true,
+   "conf": 0.9826,
+   "latency_s": 56.3176,
+   "dist": [
+    [
+     "150",
+     0.9826
+    ],
+    [
+     "160",
+     0.0081
+    ],
+    [
+     "120",
+     0.0074
+    ],
+    [
+     "140",
+     0.0019
+    ]
+   ]
+  },
+  {
+   "id": 26,
+   "tier": 2,
+   "type": "logic",
+   "pred": "no",
+   "answer": "no",
+   "ok": true,
+   "conf": 0.8411,
+   "latency_s": 52.0139,
+   "dist": [
+    [
+     "no",
+     0.8411
+    ],
+    [
+     "yes",
+     0.1589
+    ]
+   ]
+  },
+  {
+   "id": 27,
+   "tier": 2,
+   "type": "code",
+   "pred": "8",
+   "answer": "8",
+   "ok": true,
+   "conf": 0.9864,
+   "latency_s": 52.4839,
+   "dist": [
+    [
+     "8",
+     0.9864
+    ],
+    [
+     "6",
+     0.0072
+    ],
+    [
+     "23",
+     0.0046
+    ],
+    [
+     "9",
+     0.0017
+    ]
+   ]
+  },
+  {
+   "id": 28,
+   "tier": 2,
+   "type": "math",
+   "pred": "50",
+   "answer": "50",
+   "ok": true,
+   "conf": 0.3777,
+   "latency_s": 59.167,
+   "dist": [
+    [
+     "50",
+     0.3777
+    ],
+    [
+     "48",
+     0.2574
+    ],
+    [
+     "56",
+     0.1831
+    ],
+    [
+     "52",
+     0.1818
+    ]
+   ]
+  },
+  {
+   "id": 29,
+   "tier": 2,
+   "type": "logic",
+   "pred": "no",
+   "answer": "no",
+   "ok": true,
+   "conf": 0.9901,
+   "latency_s": 50.9079,
+   "dist": [
+    [
+     "no",
+     0.9901
+    ],
+    [
+     "yes",
+     0.0099
+    ]
+   ]
+  },
+  {
+   "id": 30,
+   "tier": 2,
+   "type": "code",
+   "pred": "0",
+   "answer": "0",
+   "ok": true,
+   "conf": 0.9789,
+   "latency_s": 53.2875,
+   "dist": [
+    [
+     "0",
+     0.9789
+    ],
+    [
+     "None",
+     0.0164
+    ],
+    [
+     "1",
+     0.0047
+    ],
+    [
+     "2",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 31,
+   "tier": 2,
+   "type": "math",
+   "pred": "25 percent",
+   "answer": "25 percent",
+   "ok": true,
+   "conf": 0.9958,
+   "latency_s": 52.7424,
+   "dist": [
+    [
+     "25 percent",
+     0.9958
+    ],
+    [
+     "20 percent",
+     0.0021
+    ],
+    [
+     "50 percent",
+     0.002
+    ],
+    [
+     "40 percent",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 32,
+   "tier": 2,
+   "type": "entailment",
+   "pred": "yes",
+   "answer": "yes",
+   "ok": true,
+   "conf": 0.9318,
+   "latency_s": 53.9558,
+   "dist": [
+    [
+     "yes",
+     0.9318
+    ],
+    [
+     "no",
+     0.0682
+    ]
+   ]
+  },
+  {
+   "id": 33,
+   "tier": 2,
+   "type": "math",
+   "pred": "7",
+   "answer": "7",
+   "ok": true,
+   "conf": 0.8602,
+   "latency_s": 53.6554,
+   "dist": [
+    [
+     "7",
+     0.8602
+    ],
+    [
+     "6",
+     0.1223
+    ],
+    [
+     "8",
+     0.0146
+    ],
+    [
+     "5",
+     0.0029
+    ]
+   ]
+  },
+  {
+   "id": 34,
+   "tier": 2,
+   "type": "logic",
+   "pred": "yes",
+   "answer": "yes",
+   "ok": true,
+   "conf": 0.9797,
+   "latency_s": 58.84,
+   "dist": [
+    [
+     "yes",
+     0.9797
+    ],
+    [
+     "no",
+     0.0203
+    ]
+   ]
+  },
+  {
+   "id": 35,
+   "tier": 2,
+   "type": "code",
+   "pred": "[1, 2, 3]",
+   "answer": "[1, 2, 3]",
+   "ok": true,
+   "conf": 0.9778,
+   "latency_s": 68.8649,
+   "dist": [
+    [
+     "[1, 2, 3]",
+     0.9778
+    ],
+    [
+     "[3, 1, 2]",
+     0.0154
+    ],
+    [
+     "Error",
+     0.0045
+    ],
+    [
+     "[3, 2, 1]",
+     0.0023
+    ]
+   ]
+  },
+  {
+   "id": 36,
+   "tier": 3,
+   "type": "math",
+   "pred": "0.05",
+   "answer": "0.05",
+   "ok": true,
+   "conf": 0.8601,
+   "latency_s": 53.7496,
+   "dist": [
+    [
+     "0.05",
+     0.8601
+    ],
+    [
+     "0.10",
+     0.126
+    ],
+    [
+     "0.15",
+     0.011
+    ],
+    [
+     "1.00",
+     0.003
+    ]
+   ]
+  },
+  {
+   "id": 37,
+   "tier": 3,
+   "type": "logic",
+   "pred": "9",
+   "answer": "9",
+   "ok": true,
+   "conf": 0.9904,
+   "latency_s": 52.3159,
+   "dist": [
+    [
+     "9",
+     0.9904
+    ],
+    [
+     "8",
+     0.0083
+    ],
+    [
+     "0",
+     0.0013
+    ],
+    [
+     "17",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 38,
+   "tier": 3,
+   "type": "math",
+   "pred": "5",
+   "answer": "5",
+   "ok": true,
+   "conf": 0.9908,
+   "latency_s": 53.1331,
+   "dist": [
+    [
+     "5",
+     0.9908
+    ],
+    [
+     "20",
+     0.0072
+    ],
+    [
+     "100",
+     0.0019
+    ],
+    [
+     "500",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 39,
+   "tier": 3,
+   "type": "knowledge",
+   "pred": "Au",
+   "answer": "Au",
+   "ok": true,
+   "conf": 0.9968,
+   "latency_s": 51.5142,
+   "dist": [
+    [
+     "Au",
+     0.9968
+    ],
+    [
+     "Ag",
+     0.0032
+    ],
+    [
+     "Cu",
+     0.0
+    ],
+    [
+     "Pt",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 40,
+   "tier": 3,
+   "type": "math",
+   "pred": "47",
+   "answer": "47",
+   "ok": true,
+   "conf": 0.9826,
+   "latency_s": 71.6328,
+   "dist": [
+    [
+     "47",
+     0.9826
+    ],
+    [
+     "47.5",
+     0.0139
+    ],
+    [
+     "24",
+     0.0035
+    ],
+    [
+     "36",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 41,
+   "tier": 3,
+   "type": "knowledge",
+   "pred": "First human on the Moon",
+   "answer": "First human on the Moon",
+   "ok": true,
+   "conf": 0.9971,
+   "latency_s": 76.3022,
+   "dist": [
+    [
+     "First human on the Moon",
+     0.9971
+    ],
+    [
+     "Fall of the Berlin Wall",
+     0.0028
+    ],
+    [
+     "End of World War II",
+     0.0
+    ],
+    [
+     "Sinking of the Titanic",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 42,
+   "tier": 3,
+   "type": "logic",
+   "pred": "apples only",
+   "answer": "apples only",
+   "ok": true,
+   "conf": 0.9941,
+   "latency_s": 52.9379,
+   "dist": [
+    [
+     "apples only",
+     0.9941
+    ],
+    [
+     "both",
+     0.002
+    ],
+    [
+     "oranges only",
+     0.0019
+    ],
+    [
+     "cannot be determined",
+     0.0019
+    ]
+   ]
+  },
+  {
+   "id": 43,
+   "tier": 3,
+   "type": "math",
+   "pred": "40",
+   "answer": "40",
+   "ok": true,
+   "conf": 0.92,
+   "latency_s": 95.3446,
+   "dist": [
+    [
+     "40",
+     0.92
+    ],
+    [
+     "60",
+     0.0433
+    ],
+    [
+     "30",
+     0.0291
+    ],
+    [
+     "50",
+     0.0076
+    ]
+   ]
+  },
+  {
+   "id": 44,
+   "tier": 3,
+   "type": "knowledge",
+   "pred": "Jupiter",
+   "answer": "Jupiter",
+   "ok": true,
+   "conf": 0.9984,
+   "latency_s": 64.5002,
+   "dist": [
+    [
+     "Jupiter",
+     0.9984
+    ],
+    [
+     "Earth",
+     0.0015
+    ],
+    [
+     "Neptune",
+     0.0
+    ],
+    [
+     "Saturn",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 45,
+   "tier": 3,
+   "type": "logic",
+   "pred": "Some A are C",
+   "answer": "Some A are C",
+   "ok": true,
+   "conf": 0.9963,
+   "latency_s": 56.4796,
+   "dist": [
+    [
+     "Some A are C",
+     0.9963
+    ],
+    [
+     "All A are C",
+     0.0037
+    ],
+    [
+     "No A are C",
+     0.0
+    ],
+    [
+     "All C are A",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 46,
+   "tier": 3,
+   "type": "code",
+   "pred": "True",
+   "answer": "True",
+   "ok": true,
+   "conf": 0.9658,
+   "latency_s": 56.1545,
+   "dist": [
+    [
+     "True",
+     0.9658
+    ],
+    [
+     "False",
+     0.0256
+    ],
+    [
+     "Error",
+     0.0086
+    ],
+    [
+     "None",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 47,
+   "tier": 3,
+   "type": "math",
+   "pred": "6400",
+   "answer": "6400",
+   "ok": true,
+   "conf": 0.9437,
+   "latency_s": 58.843,
+   "dist": [
+    [
+     "6400",
+     0.9437
+    ],
+    [
+     "6000",
+     0.0213
+    ],
+    [
+     "7200",
+     0.0176
+    ],
+    [
+     "8000",
+     0.0173
+    ]
+   ]
+  },
+  {
+   "id": 48,
+   "tier": 3,
+   "type": "knowledge",
+   "pred": "William Shakespeare",
+   "answer": "William Shakespeare",
+   "ok": true,
+   "conf": 0.9973,
+   "latency_s": 54.2265,
+   "dist": [
+    [
+     "William Shakespeare",
+     0.9973
+    ],
+    [
+     "John Milton",
+     0.0027
+    ],
+    [
+     "Charles Dickens",
+     0.0
+    ],
+    [
+     "Christopher Marlowe",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": 49,
+   "tier": 3,
+   "type": "logic",
+   "pred": "yes",
+   "answer": "yes",
+   "ok": true,
+   "conf": 0.9653,
+   "latency_s": 54.5289,
+   "dist": [
+    [
+     "yes",
+     0.9653
+    ],
+    [
+     "no",
+     0.0347
+    ]
+   ]
+  },
+  {
+   "id": 50,
+   "tier": 3,
+   "type": "math",
+   "pred": "42",
+   "answer": "42",
+   "ok": true,
+   "conf": 0.9935,
+   "latency_s": 55.5849,
+   "dist": [
+    [
+     "42",
+     0.9935
+    ],
+    [
+     "40",
+     0.0065
+    ],
+    [
+     "36",
+     0.0
+    ],
+    [
+     "48",
+     0.0
+    ]
+   ]
+  }
+ ],
+ "per_tier": {
+  "1": [
+   14,
+   15
+  ],
+  "2": [
+   19,
+   20
+  ],
+  "3": [
+   15,
+   15
+  ]
+ },
+ "latency_mean_s": 56.24610047340393,
+ "wall_s": 2812.311879634857
+}

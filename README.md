@@ -30,7 +30,7 @@ text, so it cannot hallucinate prose or go off the rails.
 | Engine | llama.cpp 0.4.1-dev, `-ngl 0`, OpenBLAS, 32 threads |
 | Model | `Qwen3.5-27B-Q3_K_S.gguf` (12.29 GB, 26.9 B params, hybrid attention + SSM) |
 
-**50-question benchmark — 100% (50/50)** across sentiment / topic / math / logic /
+**50-question benchmark — 96.0% (48/50)** across sentiment / topic / math / logic /
 entailment / code / world-knowledge, tiers 1-3, with calibrated confidence
 (wrong answers were not confident; see `bench/REPORT.md`).
 
@@ -61,7 +61,7 @@ prompt — which is also why the KV prefix cache does *not* help across differen
 
 | strategy | per decision |
 |---|---|
-| sequential, 1 decision per prefill | **~50 s** |
+| sequential, 1 decision per prefill | **~50-56 s** |
 | **grammar-batched, N=6 per prefill** | **~9.2 s** |
 | exact-repeat (KV cache hit) | **~0.35 s** |
 
